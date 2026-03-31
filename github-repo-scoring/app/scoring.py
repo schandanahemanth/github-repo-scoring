@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-"""Score repositories with weighted log-scaled popularity and recency decay.
+"""
+Score repositories with weighted log-scaled popularity and recency decay.
 
 The algorithm combines stars, forks, and update recency using:
 0.5 * log1p(stars) + 0.3 * log1p(forks) + 0.2 * exp(-days_since_update / 90)
@@ -8,7 +9,7 @@ The algorithm combines stars, forks, and update recency using:
 Log scaling keeps very large repositories from dominating the ranking, while
 the exponential decay term adds a freshness bonus for actively maintained code.
 The default weights and decay window are configurable through application
-settings so the ranking can be tuned without code changes.
+settings so the ranking can be tuned without code changes. Check config.py
 """
 
 import math
@@ -43,6 +44,7 @@ def calculate_score(
 ) -> float:
     """Compute the configured popularity score for a repository."""
     elapsed_days = days_since_update(pushed_at=pushed_at, now=now)
+    print("elapsed_days", elapsed_days)
     score = round(
         settings.score_weight_stars * math.log1p(stars)
         + settings.score_weight_forks * math.log1p(forks)
@@ -92,6 +94,11 @@ def rank_repositories(
     now: datetime | None = None,
 ) -> list[ScoredRepository]:
     """Score repositories and return them ordered by descending score."""
-    logger.info("Ranking %s repositories using configured scoring weights", len(repositories))
-    scored = [score_repository(repository, settings=settings, now=now) for repository in repositories]
+    logger.info(
+        "Ranking %s repositories using configured scoring weights", len(repositories)
+    )
+    scored = [
+        score_repository(repository, settings=settings, now=now)
+        for repository in repositories
+    ]
     return sorted(scored, key=lambda repository: repository.score, reverse=True)

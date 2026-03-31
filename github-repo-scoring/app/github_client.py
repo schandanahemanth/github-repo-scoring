@@ -10,7 +10,6 @@ from app.logger import logger
 from app.models import Repository
 from app.schemas import RepositorySortBy, SortOrder
 
-
 GITHUB_SEARCH_REPOSITORIES_URL = "https://api.github.com/search/repositories"
 
 
@@ -57,15 +56,17 @@ def build_headers(settings: Settings) -> dict[str, str]:
     """Build request headers for GitHub API calls, including optional auth."""
     headers = {
         "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
+        "X-GitHub-Api-Version": "2026-03-10",
     }
     if settings.github_token:
         headers["Authorization"] = f"Bearer {settings.github_token}"
     return headers
 
 
-def parse_github_datetime(value: str) -> datetime:
+def  parse_github_datetime(value: str | datetime) -> datetime:
     """Parse an ISO 8601 GitHub timestamp into a timezone-aware datetime."""
+    if isinstance(value, datetime):
+        return value
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 

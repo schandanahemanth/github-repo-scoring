@@ -5,7 +5,6 @@ from fastapi import FastAPI
 from app.routes import router
 from app.logger import logger
 
-
 app = FastAPI(
     title="GitHub Repository Scoring Service",
     version="0.1.0",
