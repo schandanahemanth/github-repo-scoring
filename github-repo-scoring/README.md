@@ -29,7 +29,7 @@ The application should assign a popularity score to each repository based on:
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.11+
 - pip
 
 ## Tech Stack
@@ -39,6 +39,7 @@ The application should assign a popularity score to each repository based on:
 - httpx
 - pytest
 - black
+- ruff
 
 ## Project Structure
 
@@ -71,7 +72,7 @@ github-repo-scoring-service/
 │   └── test_scoring.py
 ├── .env.example                # Example environment configuration
 ├── .gitignore                  # Local environment and Python ignore rules
-├── requirements.txt            # Python dependencies
+├── pyproject.toml              # Project metadata, dependencies, and tool configuration
 └── README.md                   # Project overview, setup, and API documentation
 ```
 
@@ -89,6 +90,12 @@ Optional formatting command:
 
 ```bash
 black app tests
+```
+
+Optional linting command:
+
+```bash
+ruff check app tests
 ```
 
 Copy the example environment file if needed:

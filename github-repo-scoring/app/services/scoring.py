@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+import math
+from datetime import datetime, timezone
+
+from app.core.config import Settings
+from app.core.logger import logger
+from app.models import Repository, ScoredRepository
+
 """
 Score repositories with weighted log-scaled popularity and recency decay.
 
@@ -11,14 +18,6 @@ the exponential decay term adds a freshness bonus for actively maintained code.
 The default weights and decay window are configurable through application
 settings so the ranking can be tuned without code changes. Check config.py
 """
-
-import math
-from datetime import datetime, timezone
-
-from app.core.config import Settings
-from app.core.logger import logger
-from app.models import Repository, ScoredRepository
-
 
 def _as_utc(value: datetime) -> datetime:
     """Convert a datetime value to UTC while preserving the instant in time."""

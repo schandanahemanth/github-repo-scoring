@@ -5,7 +5,6 @@ import pytest
 from fastapi import HTTPException
 
 from app.clients.github_client import (
-    GITHUB_SEARCH_REPOSITORIES_URL,
     GitHubRepositoryClient,
     build_headers,
     build_search_params,

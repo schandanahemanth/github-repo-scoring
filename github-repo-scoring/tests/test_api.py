@@ -5,8 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.api.routes import get_repository_service
 from app.main import app
-from app.models import Repository
-from app.models import ScoredRepository
+from app.models import Repository, ScoredRepository
 
 
 class StubRepositoryService:
