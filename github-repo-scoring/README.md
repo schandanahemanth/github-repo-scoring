@@ -55,6 +55,7 @@ github-repo-scoring-service/
 │   │   └── github_client.py
 │   ├── core/                   # Shared application infrastructure like config and logging
 │   │   ├── __init__.py
+│   │   ├── cache.py
 │   │   ├── config.py
 │   │   └── logger.py
 │   ├── main.py                 # FastAPI application entrypoint
@@ -69,6 +70,7 @@ github-repo-scoring-service/
 │   ├── test_api.py
 │   ├── test_config.py
 │   ├── test_github_client.py
+│   ├── test_repository_service.py
 │   └── test_scoring.py
 ├── .env.example                # Example environment configuration
 ├── .gitignore                  # Local environment and Python ignore rules
@@ -111,6 +113,7 @@ The application reads configuration from `.env`.
 ```env
 GITHUB_TOKEN=
 GITHUB_API_VERSION=2026-03-10
+GITHUB_CACHE_TTL_SECONDS=300
 SCORE_WEIGHT_STARS=0.5
 SCORE_WEIGHT_FORKS=0.3
 SCORE_WEIGHT_RECENCY=0.2
@@ -120,6 +123,7 @@ SCORE_RECENCY_DECAY_DAYS=90
 Notes:
 - `GITHUB_TOKEN` is optional for public repository search
 - a token is recommended to avoid low unauthenticated rate limits
+- repeated GitHub search results are cached in memory for the configured TTL
 - scoring weights and decay can be tuned without code changes
 
 ## Run The Service
@@ -193,6 +197,7 @@ For `GET /repositories/scored`:
 - no upstream GitHub sort is applied
 - repositories are fetched using filters only
 - scoring and final ranking happen locally
+- repeated identical GitHub searches are served from the in-memory cache until the TTL expires
 
 ## Scoring Algorithm
 
@@ -250,7 +255,6 @@ The service translates common GitHub API failures into clean HTTP responses:
 
 ## Future Enhancements
 
-- add caching for repeated GitHub queries to reduce latency and upstream API usage
 - switch to an async HTTP client if the service needs higher concurrency or parallel upstream calls
 - support multi-page aggregation before scoring to produce broader ranked results
 - add service-level authentication and rate limiting

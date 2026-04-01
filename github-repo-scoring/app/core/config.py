@@ -16,6 +16,7 @@ load_dotenv(PROJECT_ROOT / ".env")
 class Settings:
     github_token: str | None = None
     github_api_version: str = "2026-03-10"
+    github_cache_ttl_seconds: int = 300
     score_weight_stars: float = 0.5
     score_weight_forks: float = 0.3
     score_weight_recency: float = 0.2
@@ -27,6 +28,12 @@ class Settings:
         return cls(
             github_token=os.getenv("GITHUB_TOKEN", defaults.github_token or "") or None,
             github_api_version=os.getenv("GITHUB_API_VERSION", defaults.github_api_version),
+            github_cache_ttl_seconds=int(
+                os.getenv(
+                    "GITHUB_CACHE_TTL_SECONDS",
+                    str(defaults.github_cache_ttl_seconds),
+                )
+            ),
             score_weight_stars=float(
                 os.getenv("SCORE_WEIGHT_STARS", str(defaults.score_weight_stars))
             ),

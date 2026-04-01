@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 
 from app.clients.github_client import GitHubRepositoryClient
+from app.core.cache import InMemoryTTLCache
 from app.core.config import Settings, get_settings
 from app.models import Repository as RepositoryModel
 from app.models import ScoredRepository as ScoredRepositoryModel
@@ -17,6 +18,7 @@ from app.schemas import (
 from app.services.repository_service import RepositoryService
 
 router = APIRouter()
+github_search_cache = InMemoryTTLCache()
 
 
 def get_github_repository_client(
@@ -31,7 +33,11 @@ def get_repository_service(
     github_client: GitHubRepositoryClient = Depends(get_github_repository_client),
 ) -> RepositoryService:
     """Create the repository service used by the HTTP routes."""
-    return RepositoryService(github_client=github_client, settings=settings)
+    return RepositoryService(
+        github_client=github_client,
+        settings=settings,
+        cache=github_search_cache,
+    )
 
 
 def to_repository_schema(repository: RepositoryModel) -> Repository:
