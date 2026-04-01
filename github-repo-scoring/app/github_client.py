@@ -4,6 +4,7 @@ from datetime import date
 from datetime import datetime
 
 import httpx
+from fastapi import HTTPException, status
 
 from app.config import Settings
 from app.logger import logger
@@ -56,7 +57,7 @@ def build_headers(settings: Settings) -> dict[str, str]:
     """Build request headers for GitHub API calls, including optional auth."""
     headers = {
         "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2026-03-10",
+        "X-GitHub-Api-Version": settings.github_api_version,
     }
     if settings.github_token:
         headers["Authorization"] = f"Bearer {settings.github_token}"
@@ -83,6 +84,24 @@ def map_github_repository(item: dict) -> Repository:
         pushed_at=parse_github_datetime(item["pushed_at"]),
         html_url=item["html_url"],
     )
+
+
+def raise_github_api_error(response: httpx.Response) -> None:
+    """Translate a failed GitHub API response into a service-level HTTP error."""
+    status_code = response.status_code
+    message = "GitHub API request failed."
+
+    if status_code == status.HTTP_401_UNAUTHORIZED:
+        message = "GitHub API authentication failed."
+    elif status_code == status.HTTP_403_FORBIDDEN:
+        message = "GitHub API rate limit exceeded or access forbidden."
+
+    logger.warning(
+        "GitHub API request failed status_code=%s response_body=%s",
+        status_code,
+        response.text,
+    )
+    raise HTTPException(status_code=status_code, detail=message)
 
 
 class GitHubRepositoryClient:
@@ -120,7 +139,8 @@ class GitHubRepositoryClient:
             params=params,
             headers=build_headers(self.settings),
         )
-        response.raise_for_status()
+        if response.is_error:
+            raise_github_api_error(response)
 
         payload = response.json()
         total_count = payload.get("total_count", 0)

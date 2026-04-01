@@ -1,6 +1,8 @@
 from datetime import date, datetime, timezone
 
 import httpx
+import pytest
+from fastapi import HTTPException
 
 from app.config import Settings
 from app.github_client import (
@@ -120,3 +122,39 @@ def test_search_repositories_maps_upstream_response() -> None:
     assert repositories[0].full_name == "octocat/repo-scoring"
     assert total_count == 42
     assert has_next is True
+
+
+def test_search_repositories_raises_401_as_service_error() -> None:
+    """Verify unauthorized GitHub responses become service HTTP errors."""
+    transport = httpx.MockTransport(
+        lambda request: httpx.Response(
+            status_code=401, json={"message": "Bad credentials"}
+        )
+    )
+    client = GitHubRepositoryClient(
+        settings=Settings(), http_client=httpx.Client(transport=transport)
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        client.search_repositories(language="Python", created_after=date(2024, 1, 1))
+
+    assert exc.value.status_code == 401
+    assert exc.value.detail == "GitHub API authentication failed."
+
+
+def test_search_repositories_raises_403_as_service_error() -> None:
+    """Verify forbidden GitHub responses become rate-limit aware service errors."""
+    transport = httpx.MockTransport(
+        lambda request: httpx.Response(
+            status_code=403, json={"message": "rate limit exceeded"}
+        )
+    )
+    client = GitHubRepositoryClient(
+        settings=Settings(), http_client=httpx.Client(transport=transport)
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        client.search_repositories(language="Python", created_after=date(2024, 1, 1))
+
+    assert exc.value.status_code == 403
+    assert exc.value.detail == "GitHub API rate limit exceeded or access forbidden."

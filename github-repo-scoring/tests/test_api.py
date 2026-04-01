@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -27,6 +28,23 @@ class StubGitHubRepositoryClient:
             ],
             42,
             True,
+        )
+
+
+class UnauthorizedGitHubRepositoryClient:
+    """Raise an authentication error to simulate a rejected GitHub request."""
+
+    def search_repositories(self, **kwargs):
+        raise HTTPException(status_code=401, detail="GitHub API authentication failed.")
+
+
+class ForbiddenGitHubRepositoryClient:
+    """Raise a forbidden error to simulate GitHub rate limiting or denied access."""
+
+    def search_repositories(self, **kwargs):
+        raise HTTPException(
+            status_code=403,
+            detail="GitHub API rate limit exceeded or access forbidden.",
         )
 
 
@@ -94,3 +112,67 @@ def test_list_scored_repositories_returns_ranked_results() -> None:
     assert len(payload["items"]) == 1
     assert payload["items"][0]["name"] == "repo-scoring"
     assert payload["items"][0]["score"] > 0
+
+
+def test_list_repositories_propagates_401_from_github_client() -> None:
+    """Verify the raw repositories endpoint surfaces GitHub auth failures."""
+    app.dependency_overrides[get_github_repository_client] = (
+        UnauthorizedGitHubRepositoryClient
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/repositories")
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "GitHub API authentication failed."}
+
+
+def test_list_repositories_propagates_403_from_github_client() -> None:
+    """Verify the raw repositories endpoint surfaces GitHub forbidden failures."""
+    app.dependency_overrides[get_github_repository_client] = (
+        ForbiddenGitHubRepositoryClient
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/repositories")
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+    assert response.json() == {
+        "detail": "GitHub API rate limit exceeded or access forbidden."
+    }
+
+
+def test_list_scored_repositories_propagates_401_from_github_client() -> None:
+    """Verify the scored repositories endpoint surfaces GitHub auth failures."""
+    app.dependency_overrides[get_github_repository_client] = (
+        UnauthorizedGitHubRepositoryClient
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/repositories/scored")
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "GitHub API authentication failed."}
+
+
+def test_list_scored_repositories_propagates_403_from_github_client() -> None:
+    """Verify the scored repositories endpoint surfaces GitHub forbidden failures."""
+    app.dependency_overrides[get_github_repository_client] = (
+        ForbiddenGitHubRepositoryClient
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/repositories/scored")
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+    assert response.json() == {
+        "detail": "GitHub API rate limit exceeded or access forbidden."
+    }
