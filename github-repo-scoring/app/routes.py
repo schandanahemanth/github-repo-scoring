@@ -6,6 +6,7 @@ from app.config import Settings, get_settings
 from app.github_client import GitHubRepositoryClient
 from app.models import Repository as RepositoryModel
 from app.models import ScoredRepository as ScoredRepositoryModel
+from app.repository_service import RepositoryService
 from app.schemas import (
     Repository,
     RepositoryListResponse,
@@ -14,7 +15,6 @@ from app.schemas import (
     ScoredRepositoryListResponse,
     ScoredRepositoryQueryParams,
 )
-from app.scoring import rank_repositories
 
 router = APIRouter()
 
@@ -24,6 +24,14 @@ def get_github_repository_client(
 ) -> GitHubRepositoryClient:
     """Create a GitHub repository client from the current application settings."""
     return GitHubRepositoryClient(settings=settings)
+
+
+def get_repository_service(
+    settings: Settings = Depends(get_settings),
+    github_client: GitHubRepositoryClient = Depends(get_github_repository_client),
+) -> RepositoryService:
+    """Create the repository service used by the HTTP routes."""
+    return RepositoryService(github_client=github_client, settings=settings)
 
 
 def to_repository_schema(repository: RepositoryModel) -> Repository:
@@ -66,49 +74,32 @@ def health_check() -> dict[str, str]:
 @router.get("/repositories", response_model=RepositoryListResponse)
 def list_repositories(
     query: RepositoryQueryParams = Depends(),
-    github_client: GitHubRepositoryClient = Depends(get_github_repository_client),
+    repository_service: RepositoryService = Depends(get_repository_service),
 ) -> RepositoryListResponse:
     """Fetch one filtered page of GitHub repositories and return normalized results."""
-    repositories, total_count, has_next = github_client.search_repositories(
-        language=query.language,
-        created_after=query.created_after,
-        sort_by=query.sort_by,
-        order=query.order,
-        page=query.page,
-        per_page=query.per_page,
-    )
+    result = repository_service.list_repositories(query)
 
     return RepositoryListResponse(
-        page=query.page,
-        per_page=query.per_page,
-        total_count=total_count,
-        has_next=has_next,
-        items=[to_repository_schema(repository) for repository in repositories],
+        page=result.page,
+        per_page=result.per_page,
+        total_count=result.total_count,
+        has_next=result.has_next,
+        items=[to_repository_schema(repository) for repository in result.items],
     )
 
 
 @router.get("/repositories/scored", response_model=ScoredRepositoryListResponse)
 def list_scored_repositories(
     query: ScoredRepositoryQueryParams = Depends(),
-    settings: Settings = Depends(get_settings),
-    github_client: GitHubRepositoryClient = Depends(get_github_repository_client),
+    repository_service: RepositoryService = Depends(get_repository_service),
 ) -> ScoredRepositoryListResponse:
     """Fetch filtered GitHub repositories, then score and rank them locally."""
-    repositories, total_count, has_next = github_client.search_repositories(
-        language=query.language,
-        created_after=query.created_after,
-        page=query.page,
-        per_page=query.per_page,
-    )
-    ranked_repositories = rank_repositories(repositories, settings=settings)
+    result = repository_service.list_scored_repositories(query)
 
     return ScoredRepositoryListResponse(
-        page=query.page,
-        per_page=query.per_page,
-        total_count=total_count,
-        has_next=has_next,
-        items=[
-            to_scored_repository_schema(repository)
-            for repository in ranked_repositories
-        ],
+        page=result.page,
+        per_page=result.per_page,
+        total_count=result.total_count,
+        has_next=result.has_next,
+        items=[to_scored_repository_schema(repository) for repository in result.items],
     )

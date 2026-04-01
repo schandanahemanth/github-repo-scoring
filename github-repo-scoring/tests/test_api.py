@@ -4,44 +4,85 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.models import Repository
-from app.routes import get_github_repository_client
+from app.models import Repository, ScoredRepository
+from app.routes import get_repository_service
 
 
-class StubGitHubRepositoryClient:
-    """Provide predictable repository search results for route tests."""
+class StubRepositoryService:
+    """Provide predictable repository results for route tests."""
 
-    def search_repositories(self, **kwargs):
-        return (
-            [
-                Repository(
-                    name="repo-scoring",
-                    full_name="octocat/repo-scoring",
-                    description="Repository scoring service",
-                    language="Python",
-                    stars=120,
-                    forks=32,
-                    created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
-                    pushed_at=datetime(2026, 3, 30, tzinfo=timezone.utc),
-                    html_url="https://github.com/octocat/repo-scoring",
-                )
-            ],
-            42,
-            True,
-        )
+    def list_repositories(self, query):
+        return type(
+            "RepositoryResult",
+            (),
+            {
+                "items": [
+                    Repository(
+                        name="repo-scoring",
+                        full_name="octocat/repo-scoring",
+                        description="Repository scoring service",
+                        language="Python",
+                        stars=120,
+                        forks=32,
+                        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+                        pushed_at=datetime(2026, 3, 30, tzinfo=timezone.utc),
+                        html_url="https://github.com/octocat/repo-scoring",
+                    )
+                ],
+                "total_count": 42,
+                "has_next": True,
+                "page": query.page,
+                "per_page": query.per_page,
+            },
+        )()
+
+    def list_scored_repositories(self, query):
+        return type(
+            "ScoredRepositoryResult",
+            (),
+            {
+                "items": [
+                    ScoredRepository(
+                        name="repo-scoring",
+                        full_name="octocat/repo-scoring",
+                        description="Repository scoring service",
+                        language="Python",
+                        stars=120,
+                        forks=32,
+                        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+                        pushed_at=datetime(2026, 3, 30, tzinfo=timezone.utc),
+                        html_url="https://github.com/octocat/repo-scoring",
+                        score=3.4021,
+                    )
+                ],
+                "total_count": 42,
+                "has_next": True,
+                "page": query.page,
+                "per_page": query.per_page,
+            },
+        )()
 
 
-class UnauthorizedGitHubRepositoryClient:
-    """Raise an authentication error to simulate a rejected GitHub request."""
+class UnauthorizedRepositoryService:
+    """Raise an authentication error to simulate a rejected upstream request."""
 
-    def search_repositories(self, **kwargs):
+    def list_repositories(self, query):
+        raise HTTPException(status_code=401, detail="GitHub API authentication failed.")
+
+    def list_scored_repositories(self, query):
         raise HTTPException(status_code=401, detail="GitHub API authentication failed.")
 
 
-class ForbiddenGitHubRepositoryClient:
-    """Raise a forbidden error to simulate GitHub rate limiting or denied access."""
+class ForbiddenRepositoryService:
+    """Raise a forbidden error to simulate rate limiting or denied access."""
 
-    def search_repositories(self, **kwargs):
+    def list_repositories(self, query):
+        raise HTTPException(
+            status_code=403,
+            detail="GitHub API rate limit exceeded or access forbidden.",
+        )
+
+    def list_scored_repositories(self, query):
         raise HTTPException(
             status_code=403,
             detail="GitHub API rate limit exceeded or access forbidden.",
@@ -59,7 +100,7 @@ def test_health_endpoint_returns_ok() -> None:
 
 def test_list_repositories_returns_normalized_paginated_results() -> None:
     """Verify the repositories endpoint returns mapped GitHub search results."""
-    app.dependency_overrides[get_github_repository_client] = StubGitHubRepositoryClient
+    app.dependency_overrides[get_repository_service] = StubRepositoryService
 
     with TestClient(app) as client:
         response = client.get(
@@ -93,7 +134,7 @@ def test_list_repositories_returns_normalized_paginated_results() -> None:
 
 def test_list_scored_repositories_returns_ranked_results() -> None:
     """Verify the scored endpoint returns repositories ordered by computed score."""
-    app.dependency_overrides[get_github_repository_client] = StubGitHubRepositoryClient
+    app.dependency_overrides[get_repository_service] = StubRepositoryService
 
     with TestClient(app) as client:
         response = client.get(
@@ -116,9 +157,7 @@ def test_list_scored_repositories_returns_ranked_results() -> None:
 
 def test_list_repositories_propagates_401_from_github_client() -> None:
     """Verify the raw repositories endpoint surfaces GitHub auth failures."""
-    app.dependency_overrides[get_github_repository_client] = (
-        UnauthorizedGitHubRepositoryClient
-    )
+    app.dependency_overrides[get_repository_service] = UnauthorizedRepositoryService
 
     with TestClient(app) as client:
         response = client.get("/repositories")
@@ -131,9 +170,7 @@ def test_list_repositories_propagates_401_from_github_client() -> None:
 
 def test_list_repositories_propagates_403_from_github_client() -> None:
     """Verify the raw repositories endpoint surfaces GitHub forbidden failures."""
-    app.dependency_overrides[get_github_repository_client] = (
-        ForbiddenGitHubRepositoryClient
-    )
+    app.dependency_overrides[get_repository_service] = ForbiddenRepositoryService
 
     with TestClient(app) as client:
         response = client.get("/repositories")
@@ -148,9 +185,7 @@ def test_list_repositories_propagates_403_from_github_client() -> None:
 
 def test_list_scored_repositories_propagates_401_from_github_client() -> None:
     """Verify the scored repositories endpoint surfaces GitHub auth failures."""
-    app.dependency_overrides[get_github_repository_client] = (
-        UnauthorizedGitHubRepositoryClient
-    )
+    app.dependency_overrides[get_repository_service] = UnauthorizedRepositoryService
 
     with TestClient(app) as client:
         response = client.get("/repositories/scored")
@@ -163,9 +198,7 @@ def test_list_scored_repositories_propagates_401_from_github_client() -> None:
 
 def test_list_scored_repositories_propagates_403_from_github_client() -> None:
     """Verify the scored repositories endpoint surfaces GitHub forbidden failures."""
-    app.dependency_overrides[get_github_repository_client] = (
-        ForbiddenGitHubRepositoryClient
-    )
+    app.dependency_overrides[get_repository_service] = ForbiddenRepositoryService
 
     with TestClient(app) as client:
         response = client.get("/repositories/scored")

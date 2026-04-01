@@ -37,7 +37,7 @@ def build_search_params(
     sort_by: RepositorySortBy | None = None,
     order: SortOrder = SortOrder.desc,
     page: int = 1,
-    per_page: int = 50,
+    per_page: int = 30,
 ) -> dict[str, str | int]:
     """Build GitHub request parameters for repository search and pagination."""
     params: dict[str, str | int] = {
@@ -104,6 +104,22 @@ def raise_github_api_error(response: httpx.Response) -> None:
     raise HTTPException(status_code=status_code, detail=message)
 
 
+def raise_github_request_error(error: httpx.RequestError) -> None:
+    """Translate GitHub timeout and transport errors into service HTTP errors."""
+    if isinstance(error, httpx.TimeoutException):
+        logger.warning("GitHub API request timed out error=%s", error)
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="GitHub API request timed out.",
+        ) from error
+
+    logger.warning("GitHub API request failed due to transport error=%s", error)
+    raise HTTPException(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        detail="GitHub API is currently unavailable.",
+    ) from error
+
+
 class GitHubRepositoryClient:
     def __init__(
         self,
@@ -134,11 +150,14 @@ class GitHubRepositoryClient:
             per_page=per_page,
         )
         logger.info("Searching GitHub repositories with params=%s", params)
-        response = self.http_client.get(
-            GITHUB_SEARCH_REPOSITORIES_URL,
-            params=params,
-            headers=build_headers(self.settings),
-        )
+        try:
+            response = self.http_client.get(
+                GITHUB_SEARCH_REPOSITORIES_URL,
+                params=params,
+                headers=build_headers(self.settings),
+            )
+        except httpx.RequestError as error:
+            raise_github_request_error(error)
         if response.is_error:
             raise_github_api_error(response)
 

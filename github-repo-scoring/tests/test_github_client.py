@@ -158,3 +158,39 @@ def test_search_repositories_raises_403_as_service_error() -> None:
 
     assert exc.value.status_code == 403
     assert exc.value.detail == "GitHub API rate limit exceeded or access forbidden."
+
+
+def test_search_repositories_raises_504_on_timeout() -> None:
+    """Verify GitHub timeouts become gateway timeout service errors."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("Request timed out", request=request)
+
+    transport = httpx.MockTransport(handler)
+    client = GitHubRepositoryClient(
+        settings=Settings(), http_client=httpx.Client(transport=transport)
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        client.search_repositories(language="Python", created_after=date(2024, 1, 1))
+
+    assert exc.value.status_code == 504
+    assert exc.value.detail == "GitHub API request timed out."
+
+
+def test_search_repositories_raises_502_on_transport_error() -> None:
+    """Verify GitHub transport errors become bad gateway service errors."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("Connection failed", request=request)
+
+    transport = httpx.MockTransport(handler)
+    client = GitHubRepositoryClient(
+        settings=Settings(), http_client=httpx.Client(transport=transport)
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        client.search_repositories(language="Python", created_after=date(2024, 1, 1))
+
+    assert exc.value.status_code == 502
+    assert exc.value.detail == "GitHub API is currently unavailable."
