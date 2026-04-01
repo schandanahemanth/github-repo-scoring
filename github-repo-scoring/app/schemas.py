@@ -19,7 +19,10 @@ class SortOrder(str, Enum):
 
 class RepositoryQueryParams(BaseModel):
     language: str | None = Field(default=None, min_length=1)
-    created_after: date | None = None
+    created_after: date | None = Field(
+        default=None,
+        description="Earliest repository creation date in YYYY-MM-DD format.",
+    )
     sort_by: RepositorySortBy | None = None
     order: SortOrder = SortOrder.desc
     page: int = Field(default=1, ge=1)
@@ -28,7 +31,10 @@ class RepositoryQueryParams(BaseModel):
 
 class ScoredRepositoryQueryParams(BaseModel):
     language: str | None = Field(default=None, min_length=1)
-    created_after: date | None = None
+    created_after: date | None = Field(
+        default=None,
+        description="Earliest repository creation date in YYYY-MM-DD format.",
+    )
     page: int = Field(default=1, ge=1)
     per_page: int = Field(default=30, ge=1, le=100)
 

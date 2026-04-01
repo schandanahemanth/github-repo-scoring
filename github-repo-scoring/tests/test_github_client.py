@@ -78,6 +78,7 @@ def test_map_github_repository_normalizes_response_fields() -> None:
 
 def test_search_repositories_maps_upstream_response() -> None:
     """Verify the client fetches, maps, and paginates GitHub search results."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         assert str(request.url) == (
             "https://api.github.com/search/repositories"

@@ -17,10 +17,20 @@ class Settings:
         defaults = cls()
         return cls(
             github_token=os.getenv("GITHUB_TOKEN", defaults.github_token or "") or None,
-            score_weight_stars=float(os.getenv("SCORE_WEIGHT_STARS", str(defaults.score_weight_stars))),
-            score_weight_forks=float(os.getenv("SCORE_WEIGHT_FORKS", str(defaults.score_weight_forks))),
-            score_weight_recency=float(os.getenv("SCORE_WEIGHT_RECENCY", str(defaults.score_weight_recency))),
-            score_recency_decay_days=int(os.getenv("SCORE_RECENCY_DECAY_DAYS", str(defaults.score_recency_decay_days))),
+            score_weight_stars=float(
+                os.getenv("SCORE_WEIGHT_STARS", str(defaults.score_weight_stars))
+            ),
+            score_weight_forks=float(
+                os.getenv("SCORE_WEIGHT_FORKS", str(defaults.score_weight_forks))
+            ),
+            score_weight_recency=float(
+                os.getenv("SCORE_WEIGHT_RECENCY", str(defaults.score_weight_recency))
+            ),
+            score_recency_decay_days=int(
+                os.getenv(
+                    "SCORE_RECENCY_DECAY_DAYS", str(defaults.score_recency_decay_days)
+                )
+            ),
         )
 
 

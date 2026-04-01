@@ -63,7 +63,7 @@ def build_headers(settings: Settings) -> dict[str, str]:
     return headers
 
 
-def  parse_github_datetime(value: str | datetime) -> datetime:
+def parse_github_datetime(value: str | datetime) -> datetime:
     """Parse an ISO 8601 GitHub timestamp into a timezone-aware datetime."""
     if isinstance(value, datetime):
         return value
