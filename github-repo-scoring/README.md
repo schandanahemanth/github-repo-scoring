@@ -2,6 +2,18 @@
 
 Backend service for searching public GitHub repositories and ranking them with a custom popularity score.
 
+## Overview
+
+This project implements a small FastAPI service for a coding challenge.
+
+The service:
+- queries GitHub's public repository search API
+- allows filtering by `language` and `created_after`
+- returns raw repository results
+- returns scored repository results using a configurable popularity formula
+
+The service only searches public repositories. A GitHub token is optional and is used only to improve API rate limits.
+
 ## Challenge Brief
 
 Build a backend application that scores GitHub repositories using the public GitHub search API.
@@ -14,18 +26,6 @@ The application should assign a popularity score to each repository based on:
 - stars
 - forks
 - recency of updates
-
-## Overview
-
-This project implements a small FastAPI service for a coding challenge.
-
-The service:
-- queries GitHub's public repository search API
-- allows filtering by `language` and `created_after`
-- returns raw repository results
-- returns scored repository results using a configurable popularity formula
-
-The service only searches public repositories. A GitHub token is optional and is used only to improve API rate limits.
 
 ## Requirements
 
@@ -46,14 +46,23 @@ The service only searches public repositories. A GitHub token is optional and is
 github-repo-scoring-service/
 ├── app/                        # Application package
 │   ├── __init__.py
-│   ├── config.py
-│   ├── github_client.py
-│   ├── logger.py
-│   ├── main.py
-│   ├── models.py
-│   ├── routes.py
-│   ├── schemas.py
-│   └── scoring.py
+│   ├── api/                    # FastAPI route handlers and dependency wiring
+│   │   ├── __init__.py
+│   │   └── routes.py
+│   ├── clients/                # External service clients such as GitHub API access
+│   │   ├── __init__.py
+│   │   └── github_client.py
+│   ├── core/                   # Shared application infrastructure like config and logging
+│   │   ├── __init__.py
+│   │   ├── config.py
+│   │   └── logger.py
+│   ├── main.py                 # FastAPI application entrypoint
+│   ├── models.py               # Internal domain models used across services and clients
+│   ├── schemas.py              # Request and response schemas exposed by the API
+│   └── services/               # Application services for orchestration and scoring logic
+│       ├── __init__.py
+│       ├── repository_service.py
+│       └── scoring_service.py
 ├── tests/                      # API and service tests
 │   ├── conftest.py
 │   ├── test_api.py
@@ -168,11 +177,7 @@ GET https://api.github.com/search/repositories
 
 Filter mapping:
 - `language=Python` becomes `language:Python`
-- `created_after=2024-01-01` becomes `created:>=2026-03-01`
-so the endpoint to search Github repository:
-```
-https://api.github.com/search/repositories?q=language:Python+created:>=2026-03-01&per_page=10&page=1&sort=forks&order=asc
-```
+- `created_after=2024-01-01` becomes `created:>=2024-01-01`
 
 For `GET /repositories`:
 - optional raw sorting is passed through to GitHub
@@ -184,7 +189,7 @@ For `GET /repositories/scored`:
 
 ## Scoring Algorithm
 
-The popularity formula is:
+The agreed popularity formula is:
 
 ```python
 score = (
@@ -206,6 +211,7 @@ Design notes:
 
 Scoring uses the current page of GitHub results only, not the full GitHub result set.
 
+
 ## Running Tests
 
 ```bash
@@ -218,25 +224,28 @@ If you are using the virtual environment directly:
 python -m pytest
 ```
 
+
 ## Error Handling
 
 The service translates common GitHub API failures into clean HTTP responses:
-- `401` for invalid authentication
-- `403` for rate limiting or forbidden access
+- `401` for invalid GitHub authentication
+- `403` for GitHub rate limiting or forbidden access
+- `502` when the GitHub API is unavailable or a transport error occurs
+- `504` when the GitHub API request times out
 
 ## Limitations
 
 - only public GitHub repositories are supported
 - repository data is fetched on demand and is not persisted
 - scored ranking is applied only to the current GitHub search page requested by the user; GitHub returns paginated results with up to 100 repositories per page, and this version does not aggregate scores across multiple pages
+- the service does not implement its own authentication or rate limiting; it relies on GitHub's public API and may be affected by upstream rate limits, especially without a configured `GITHUB_TOKEN`
 - no caching layer is included in this version
-- the service does not implement its own authentication or rate limiting; it relies on GitHub’s public API and may be affected by upstream rate limits, especially without a configured GITHUB_TOKEN
 
-# Future Enhancements
+## Future Enhancements
 
 - add caching for repeated GitHub queries to reduce latency and upstream API usage
 - switch to an async HTTP client if the service needs higher concurrency or parallel upstream calls
 - support multi-page aggregation before scoring to produce broader ranked results
 - add service-level authentication and rate limiting
-- persist repository snapshots for analytics
+- persist repository snapshots for analytics, trend tracking, or historical comparisons
 - expose a normalized display score in addition to the raw ranking score

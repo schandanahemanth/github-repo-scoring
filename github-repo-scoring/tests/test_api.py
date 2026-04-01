@@ -3,9 +3,10 @@ from datetime import datetime, timezone
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from app.api.routes import get_repository_service
 from app.main import app
-from app.models import Repository, ScoredRepository
-from app.routes import get_repository_service
+from app.models import Repository
+from app.models import ScoredRepository
 
 
 class StubRepositoryService:

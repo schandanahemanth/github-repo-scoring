@@ -15,8 +15,8 @@ settings so the ranking can be tuned without code changes. Check config.py
 import math
 from datetime import datetime, timezone
 
-from app.config import Settings
-from app.logger import logger
+from app.core.config import Settings
+from app.core.logger import logger
 from app.models import Repository, ScoredRepository
 
 
@@ -44,7 +44,6 @@ def calculate_score(
 ) -> float:
     """Compute the configured popularity score for a repository."""
     elapsed_days = days_since_update(pushed_at=pushed_at, now=now)
-    print("elapsed_days", elapsed_days)
     score = round(
         settings.score_weight_stars * math.log1p(stars)
         + settings.score_weight_forks * math.log1p(forks)

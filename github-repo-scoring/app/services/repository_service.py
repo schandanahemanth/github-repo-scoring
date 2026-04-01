@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.config import Settings
-from app.github_client import GitHubRepositoryClient
-from app.logger import logger
+from app.clients.github_client import GitHubRepositoryClient
+from app.core.config import Settings
+from app.core.logger import logger
 from app.models import Repository, ScoredRepository
 from app.schemas import RepositoryQueryParams, ScoredRepositoryQueryParams
-from app.scoring import rank_repositories
+from app.services.scoring import rank_repositories
 
 
 @dataclass(frozen=True)

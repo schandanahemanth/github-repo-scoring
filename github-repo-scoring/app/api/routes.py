@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 
-from app.config import Settings, get_settings
-from app.github_client import GitHubRepositoryClient
+from app.clients.github_client import GitHubRepositoryClient
+from app.core.config import Settings, get_settings
 from app.models import Repository as RepositoryModel
 from app.models import ScoredRepository as ScoredRepositoryModel
-from app.repository_service import RepositoryService
 from app.schemas import (
     Repository,
     RepositoryListResponse,
@@ -15,6 +14,7 @@ from app.schemas import (
     ScoredRepositoryListResponse,
     ScoredRepositoryQueryParams,
 )
+from app.services.repository_service import RepositoryService
 
 router = APIRouter()
 

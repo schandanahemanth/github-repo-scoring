@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta, timezone
 
-from app.config import Settings
+from app.core.config import Settings
 from app.models import Repository
-from app.scoring import calculate_score
+from app.services.scoring import calculate_score
 
 
 def test_scoring_uses_agreed_formula() -> None:

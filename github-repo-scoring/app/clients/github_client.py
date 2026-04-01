@@ -6,8 +6,8 @@ from datetime import datetime
 import httpx
 from fastapi import HTTPException, status
 
-from app.config import Settings
-from app.logger import logger
+from app.core.config import Settings
+from app.core.logger import logger
 from app.models import Repository
 from app.schemas import RepositorySortBy, SortOrder
 

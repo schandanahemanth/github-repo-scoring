@@ -4,8 +4,7 @@ import httpx
 import pytest
 from fastapi import HTTPException
 
-from app.config import Settings
-from app.github_client import (
+from app.clients.github_client import (
     GITHUB_SEARCH_REPOSITORIES_URL,
     GitHubRepositoryClient,
     build_headers,
@@ -13,6 +12,7 @@ from app.github_client import (
     build_search_query,
     map_github_repository,
 )
+from app.core.config import Settings
 from app.schemas import RepositorySortBy, SortOrder
 
 
