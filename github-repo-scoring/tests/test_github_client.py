@@ -126,9 +126,7 @@ def test_search_repositories_maps_upstream_response() -> None:
 def test_search_repositories_raises_401_as_service_error() -> None:
     """Verify unauthorized GitHub responses become service HTTP errors."""
     transport = httpx.MockTransport(
-        lambda request: httpx.Response(
-            status_code=401, json={"message": "Bad credentials"}
-        )
+        lambda request: httpx.Response(status_code=401, json={"message": "Bad credentials"})
     )
     client = GitHubRepositoryClient(
         settings=Settings(), http_client=httpx.Client(transport=transport)
@@ -144,9 +142,7 @@ def test_search_repositories_raises_401_as_service_error() -> None:
 def test_search_repositories_raises_403_as_service_error() -> None:
     """Verify forbidden GitHub responses become rate-limit aware service errors."""
     transport = httpx.MockTransport(
-        lambda request: httpx.Response(
-            status_code=403, json={"message": "rate limit exceeded"}
-        )
+        lambda request: httpx.Response(status_code=403, json={"message": "rate limit exceeded"})
     )
     client = GitHubRepositoryClient(
         settings=Settings(), http_client=httpx.Client(transport=transport)

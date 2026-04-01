@@ -26,9 +26,7 @@ class Settings:
         defaults = cls()
         return cls(
             github_token=os.getenv("GITHUB_TOKEN", defaults.github_token or "") or None,
-            github_api_version=os.getenv(
-                "GITHUB_API_VERSION", defaults.github_api_version
-            ),
+            github_api_version=os.getenv("GITHUB_API_VERSION", defaults.github_api_version),
             score_weight_stars=float(
                 os.getenv("SCORE_WEIGHT_STARS", str(defaults.score_weight_stars))
             ),

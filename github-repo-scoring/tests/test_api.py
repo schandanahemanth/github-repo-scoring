@@ -178,9 +178,7 @@ def test_list_repositories_propagates_403_from_github_client() -> None:
     app.dependency_overrides.clear()
 
     assert response.status_code == 403
-    assert response.json() == {
-        "detail": "GitHub API rate limit exceeded or access forbidden."
-    }
+    assert response.json() == {"detail": "GitHub API rate limit exceeded or access forbidden."}
 
 
 def test_list_scored_repositories_propagates_401_from_github_client() -> None:
@@ -206,6 +204,4 @@ def test_list_scored_repositories_propagates_403_from_github_client() -> None:
     app.dependency_overrides.clear()
 
     assert response.status_code == 403
-    assert response.json() == {
-        "detail": "GitHub API rate limit exceeded or access forbidden."
-    }
+    assert response.json() == {"detail": "GitHub API rate limit exceeded or access forbidden."}

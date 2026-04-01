@@ -31,9 +31,7 @@ class ScoredRepositorySearchResult:
 class RepositoryService:
     """Coordinate repository fetching and scoring for the API layer."""
 
-    def __init__(
-        self, github_client: GitHubRepositoryClient, settings: Settings
-    ) -> None:
+    def __init__(self, github_client: GitHubRepositoryClient, settings: Settings) -> None:
         """Initialize the service with the GitHub client and current settings."""
         self.github_client = github_client
         self.settings = settings

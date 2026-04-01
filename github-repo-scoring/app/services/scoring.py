@@ -19,6 +19,7 @@ The default weights and decay window are configurable through application
 settings so the ranking can be tuned without code changes. Check config.py
 """
 
+
 def _as_utc(value: datetime) -> datetime:
     """Convert a datetime value to UTC while preserving the instant in time."""
     if value.tzinfo is None:
@@ -92,11 +93,8 @@ def rank_repositories(
     now: datetime | None = None,
 ) -> list[ScoredRepository]:
     """Score repositories and return them ordered by descending score."""
-    logger.info(
-        "Ranking %s repositories using configured scoring weights", len(repositories)
-    )
+    logger.info("Ranking %s repositories using configured scoring weights", len(repositories))
     scored = [
-        score_repository(repository, settings=settings, now=now)
-        for repository in repositories
+        score_repository(repository, settings=settings, now=now) for repository in repositories
     ]
     return sorted(scored, key=lambda repository: repository.score, reverse=True)
