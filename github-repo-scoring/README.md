@@ -189,6 +189,12 @@ GET https://api.github.com/search/repositories
 Filter mapping:
 - `language=Python` becomes `language:Python`
 - `created_after=2024-01-01` becomes `created:>=2024-01-01`
+so the endpoint to search Github repository using both the parameters, would be:
+```
+https://api.github.com/search/repositories?q=language:Python+created:>=2024-01-01&per_page=10&page=1&sort=forks&order=asc
+```
+
+
 
 For `GET /repositories`:
 - optional raw sorting is passed through to GitHub
@@ -258,5 +264,5 @@ The service translates common GitHub API failures into clean HTTP responses:
 - switch to an async HTTP client if the service needs higher concurrency or parallel upstream calls
 - support multi-page aggregation before scoring to produce broader ranked results
 - add service-level authentication and rate limiting
-- persist repository snapshots for analytics, trend tracking, or historical comparisons
+- persist repository snapshots for analytics or historical comparisons
 - expose a normalized display score in addition to the raw ranking score
